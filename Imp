@@ -1,0 +1,492 @@
+local RunService = game:GetService("RunService")
+-- ui shit 
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+local Window = Library.CreateLib("Imp", "Ocean")
+
+
+local general = Window:NewTab("Main")
+local sliders = general:NewSection("Lounge")
+local hbe = Window:NewTab("HBE")
+local ballstuff = hbe:NewSection("LOUNGE")
+-- variables
+local players = game:GetService("Players")
+local player = players.LocalPlayer
+local uppertorso = player.Character.UpperTorso
+local sound = Instance.new("Sound", game.Workspace)
+local camera = workspace.CurrentCamera
+
+local Settings = settings()
+
+local CurrentHoop
+local LocalPlayer = game.Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local tweenservice = game:GetService("TweenService")
+local settings2 = require(ReplicatedStorage.Modules.Settings)
+local tweeninfo = TweenInfo.new(
+	0.5, 
+	Enum.EasingStyle.Linear, 
+	Enum.EasingDirection.InOut, 
+	0, 
+	false, 
+	0
+)
+
+local actions = game:GetService("ReplicatedStorage").Events.Player.Actions
+
+local ankles_c = 0
+local fall_c = 0
+
+--functionality
+local function nosit()
+	pcall(function()
+		for _, c in pairs(getconnections(actions.OnClientEvent)) do
+			local constants = debug.getconstants(c.Function)
+			ankles_c = table.find(constants, "Ankles")
+			fall_c = table.find(constants, "Fall")
+
+			debug.setconstant(c.Function, table.find(constants, "Ankles"), "")
+			debug.setconstant(c.Function, table.find(constants, "Fall"), "")
+		end
+	end)
+end
+
+local function nositdisabler()
+	pcall(function()
+		for _, c in pairs(getconnections(actions.OnClientEvent)) do
+			local constants = debug.getconstants(c.Function)
+			debug.setconstant(c.Function, ankles_c, "Ankles")
+			debug.setconstant(c.Function, fall_c, "Fall")
+		end
+	end)
+end
+
+local function ballClones()
+	for _, v in pairs(workspace.Balls:GetChildren()) do
+		if v:FindFirstChild("ClonedBall") then
+			return
+		end
+		local clone = v:Clone()
+		clone.Name = "ClonedBall"
+		clone.Anchored = true
+		clone.Transparency = 0
+		clone.Parent = v
+		clone.Size = Vector3.new(1.32, 1.32, 1.32)
+		clone.CanCollide = false
+		RunService:BindToRenderStep("ballframe", Enum.RenderPriority.Camera.Value, function()
+			clone.CFrame = v.CFrame
+		end)
+	end
+end
+
+local function ballsizehandler(size) -- AYO THIS IS SUPER SUS
+	if uppertorso:FindFirstChild("Ball") then
+		for _, v in pairs(workspace.Balls:GetChildren()) do
+			v.Size = Vector3.new(1.32, 1.32, 1.32)
+			v.Transparency = 1
+		end
+	else
+		for _, v in pairs(workspace.Balls:GetChildren()) do
+			v.Size = Vector3.new(size, size, size)
+			v.Transparency = 1
+		end
+	end
+end
+
+local function deleteclones()
+	for _, v in pairs(workspace.Balls:GetChildren()) do
+		local cb = v:FindFirstChild("ClonedBall")
+		if pcall(function() RunService:UnbindFromRenderStep("ballframe") end) then RunService:UnbindFromRenderStep("ballframe") end
+		cb:Destroy()
+	end
+end
+
+local function rebound2(v1)
+	task.spawn(function()
+		for i = 1, v1 do
+			local args = {[1] = "rebound"}
+			game:GetService("ReplicatedStorage").Events.Player.Actions:FireServer(unpack(args))
+			wait(1)
+		end
+	end)
+end
+
+local function tween()
+	CurrentHoop = settings2:GetHoop(LocalPlayer, workspace.Hoops:GetDescendants())
+	local tweentopart = tweenservice:Create(LocalPlayer.Character.HumanoidRootPart, tweeninfo, {CFrame = CurrentHoop.Extra.Backboard.CFrame})
+	tweentopart:Play()
+	tweentopart.Completed:Wait()
+end
+
+local function pump()
+	local args = {[1] = "Pump"}
+	game:GetService("ReplicatedStorage").Events.Player.Actions:FireServer(unpack(args))
+end
+
+local function setupShot()
+	local args = {
+		[1] = "shotType",
+		[2] = {
+			["Ac"] = {
+				["Dunk"] = false,
+				["Posting"] = false,
+				["ShootingEnabled"] = true,
+				["NoMov"] = false,
+				["PickupBall"] = false,
+				["Shooting"] = true,
+				["Blocking"] = false,
+				["catchPass"] = false,
+				["Dead"] = false,
+				["DribbleAnim"] = false,
+				["Falling"] = false,
+				["Lateral"] = false,
+				["Handles"] = false,
+				["Pivot"] = false,
+				["walkOnCourt"] = false,
+				["HideChars"] = false,
+				["NoRun"] = false,
+				["Running"] = false,
+				["PumpFake"] = false,
+				["ShotBall"] = false,
+				["Dropball"] = false,
+				["brokenAnkles"] = false,
+				["Steal"] = false,
+				["Rebound"] = false,
+				["Guarding"] = false,
+				["PostMove"] = false,
+				["hasBall"] = true,
+				["Pick"] = false,
+				["hopStep"] = false,
+				["offDribble"] = false,
+				["Passing"] = false,
+				["CrossOver"] = false,
+				["withBallMovement"] = false
+			},
+			["Con"] = "reg",
+			["Co"] = {
+				["shift"] = false,
+				["shiftHold"] = false,
+				["Alley"] = false,
+				["Passing"] = false
+			},
+			["vel"] = -math.huge
+		}
+	}
+
+	game:GetService("ReplicatedStorage").Events.Player.Ball:InvokeServer(unpack(args))
+	game:GetService("ReplicatedStorage").Events.Player.Actions:FireServer("addPower", {})
+	game:GetService("ReplicatedStorage").Events.Player.Ball:InvokeServer("stop")
+end
+
+-- workspace.Balls.ChildAdded:Connect(deleteclones)
+
+-- general tab
+-- c def paint is 68
+-- pf pure stretch default ball speed = 71
+sliders:NewSlider("ballspeed", "this changes your speed with the ball default ~70", 90, 71, function(num) 
+	if pcall(function() RunService:UnbindFromRenderStep("ballspeed") end) then RunService:UnbindFromRenderStep("ballspeed") end
+	RunService:BindToRenderStep("ballspeed", Enum.RenderPriority.Camera.Value, function()
+		game:GetService("Players").LocalPlayer.Info.Stats.SpeedBall.Value = num
+	end)  
+end)
+
+sliders:NewSlider("defensivespeed", "this changes your speed whiled defending", 90, 71, function(num)
+	if pcall(function() RunService:UnbindFromRenderStep("defspeed") end) then RunService:UnbindFromRenderStep("defspeed") end
+	RunService:BindToRenderStep("defspeed", Enum.RenderPriority.Camera.Value, function()
+		game:GetService("Players").LocalPlayer.Info.Stats.DefensiveSpeed.Value = num
+	end)
+end)
+
+-- https://xheptcofficial.gitbook.io/kavo-library/#creating-textboxes
+sliders:NewSlider("fov", "recommended fov is 85 default 70", 120, 1, function(num) 
+	if pcall(function() RunService:UnbindFromRenderStep("ChangeCameraFOV") end) then RunService:UnbindFromRenderStep("ChangeCameraFOV") end
+	RunService:BindToRenderStep("ChangeCameraFOV", Enum.RenderPriority.Camera.Value, function()
+		camera.FieldOfView = num
+	end)
+end)
+
+
+
+sliders:NewTextBox("shootspeed", "dont go over 1.25 shoot speed", function(num)
+	if pcall(function() RunService:UnbindFromRenderStep("shootspeed") end) then RunService:UnbindFromRenderStep("shootspeed") end
+	RunService:BindToRenderStep("shootspeed", Enum.RenderPriority.Camera.Value, function()
+		local character = player.Character or player.CharacterAdded:Wait()
+		local humanoid = character:WaitForChild("Humanoid")
+		function fucku()
+			for i, v in pairs(humanoid:GetPlayingAnimationTracks()) do
+				local animationid = v.Animation.AnimationId
+				if animationid == "rbxassetid://5099677897" or animationid == "rbxassetid://5463881468" then
+					return true
+				end
+			end
+		end
+		if fucku() then
+			for i, v in pairs(humanoid:GetPlayingAnimationTracks()) do
+				v:AdjustSpeed(num)
+			end
+		else
+			for i, v in pairs(humanoid:GetPlayingAnimationTracks()) do
+				v:AdjustSpeed(1)
+			end
+		end
+	end)
+end)
+
+
+
+
+
+
+sliders:NewButton("force reset", "resets your character", function()
+	game:GetService("ReplicatedStorage").Events.Player.LoadPlayer:FireServer()
+end)
+
+sliders:NewKeybind("toggle ui", "turns on and off the ui", Enum.KeyCode.LeftControl, function()
+	Library:ToggleUI()
+end)
+
+
+
+
+workspace.Balls.ChildAdded:Connect(deleteclones)
+-- hbe tab
+
+ballstuff:NewTextBox("ballsize", "changes the size of hbe default 1.32", function(num)
+	if pcall(function() RunService:UnbindFromRenderStep("ballsize") end) then RunService:UnbindFromRenderStep("ballsize") end
+	RunService:BindToRenderStep("ballsize", Enum.RenderPriority.Camera.Value, function()
+		ballClones()
+		ballsizehandler(num)
+	end)
+end)
+
+local reboundpage = Window:NewTab("Lounge")
+local rebound = reboundpage:NewSection("Main")
+
+rebound:NewKeybind("ghost rebound", "ghost rebound(try to catch a pass)", Enum.KeyCode.RightSuper, function()
+	local args = {
+		[1] = "rebound"
+	}
+
+	game:GetService("ReplicatedStorage").Events.Player.Actions:FireServer(unpack(args))
+
+end)
+
+rebound:NewKeybind("ghost dribble", "Dribble without doing anything dribble move", Enum.KeyCode.RightSuper, function()
+	local args = {
+		[1] = "cross"
+	}
+
+	game:GetService("ReplicatedStorage").Events.Player.Actions:FireServer(unpack(args))
+end)
+
+
+rebound:NewKeybind("ghost reach", "ghost reach", Enum.KeyCode.RightSuper, function()
+	local args = {
+		[1] = "steal",
+		[2] = "Right"
+	}
+
+	game:GetService("ReplicatedStorage").Events.Player.Actions:FireServer(unpack(args))
+
+end)
+
+rebound:NewTextBox("join anyone", "input their username perfectly to join them", function(txt)
+	local args = {
+		[1] = "Join",
+		[2] = {
+			["Name"] = txt
+		}
+	}
+
+	game:GetService("ReplicatedStorage").Events.Player.HandleTeleport:InvokeServer(unpack(args))
+end)
+
+rebound:NewButton("bump stun remover", "removes stun from bump REJOIN TO TURN OFF", function()
+	if pcall(function() RunService:UnbindFromRenderStep("pushback") end) then RunService:UnbindFromRenderStep("pushback") end
+	RunService:BindToRenderStep("pushback", Enum.RenderPriority.Camera.Value, function()
+		game:GetService("Players").LocalPlayer.Backpack.Actions.Pushback.Value = false
+	end)
+end)
+
+local toggled99 = true
+rebound:NewKeybind("auto rebound", "Kinda useful", Enum.KeyCode.RightSuper, function()
+	if toggled99 then
+		rebound2(3)
+		tween()
+		LocalPlayer.Character.HumanoidRootPart.Anchored = true
+		toggled99 = false
+	else
+		LocalPlayer.Character.HumanoidRootPart.Anchored = false
+		toggled99 = true
+	end
+end)
+
+rebound:NewKeybind("force 0", "OP", Enum.KeyCode.RightSuper, function()
+	setupShot()
+	pump()
+end)
+
+rebound:NewButton("force day", "", function()
+	game:GetService("Lighting").ClockTime = 11.5
+
+	game:GetService("Lighting"):GetPropertyChangedSignal("ClockTime"):Connect(function()
+		game:GetService("Lighting").ClockTime = 11.5
+	end) 
+end)
+
+rebound:NewButton("chat logs", "", function()
+	game:GetService("Players").LocalPlayer.PlayerGui.Chat.Frame.ChatChannelParentFrame.Visible = true
+	game:GetService("Players").LocalPlayer.PlayerGui.Chat.Frame.ChatBarParentFrame.Position = game:GetService("Players").LocalPlayer.PlayerGui.Chat.Frame.ChatChannelParentFrame.Position + UDim2.new(UDim.new(), game:GetService("Players").LocalPlayer.PlayerGui.Chat.Frame.ChatChannelParentFrame.Size.Y)
+end)
+
+local toggled45 = true
+rebound:NewButton("make 90% of reverse lays", "", function()
+	if toggled45 then
+		RunService:BindToRenderStep("revlay", Enum.RenderPriority.Camera.Value, function()
+			local revLay = game:GetService("Players").LocalPlayer.Info.Profile.ShotPower.LayupR
+			local shotPower = game:GetService("Players").LocalPlayer.Info.Profile.ShotPower.Value  
+			if revLay.Value then
+				local args = {[1] = "block"}
+				game:GetService("ReplicatedStorage").Events.Player.Actions:FireServer(unpack(args))
+			end
+		end)
+		toggled45 = false
+	elseif toggled45 == false then
+		if pcall(function() RunService:UnbindFromRenderStep("revlay") end) then RunService:UnbindFromRenderStep("revlay") end
+		toggled45 = true
+	end     
+end)
+
+local characterpage = Window:NewTab("character")
+local characterpagesection = characterpage:NewSection("general")
+
+-- RunService:BindToRenderStep("ballspeed", Enum.RenderPriority.Camera.Value, function()
+characterpagesection:NewButton("hide name", "", function()
+	local character2 = player.Character or player.CharacterAdded:Wait()
+	local nametag = character2.HumanoidRootPart.nameTag
+	nametag.NameTag:Destroy()
+	nametag.Ovr:Destroy()
+	nametag.Title:Destroy()
+	nametag.Logo:Destroy()
+end)
+
+
+characterpagesection:NewButton("remove face", "removes your face", function()
+	local character2 = player.Character or player.CharacterAdded:Wait()
+	local head = character2.Head
+	head.eyeBrow:Destroy()
+	head.eyeColor:Destroy()
+	head.eyeOutline:Destroy()
+	head.Mouth:Destroy()
+end)
+
+
+characterpagesection:NewButton("remove ears", "removes ear", function()
+	local character2 = player.Character or player.CharacterAdded:Wait()
+	local ears = character2.Ears
+	ears.Ear:Destroy()
+	ears.Ear:Destroy()
+end)
+
+characterpagesection:NewButton("remove hair", "remove hair", function()
+	local character2 = player.Character or player.CharacterAdded:Wait()
+	local hair = character2.Hair
+	hair.Handle.AccessoryWeld:Destroy()
+end)
+
+local fpspage = Window:NewTab("fps")
+local fpssection = fpspage:NewSection("general")
+
+
+fpssection:NewTextBox("fps cap", "sets fps cap, might be synapse only", function(num)
+	setfpscap(num)
+end)
+
+fpssection:NewButton("park fps booster", "", function()
+	local destroythis = {
+		workspace.Stuff.Cables,
+		workspace.Stuff.Porter,
+		workspace.Stuff.Fences,
+		workspace.Stuff.DetailedFence,
+		workspace.Stuff.Rack,
+		workspace.Stuff.Buildings,
+		workspace.Stuff.Trees,
+		workspace.Stuff.LightPoles,
+		workspace.Stuff.Lights,
+		workspace.Stuff.Water,
+		workspace.Stuff.Bins,
+		workspace.Stuff.Benches,
+	}
+	for i, v in pairs(destroythis) do
+		v:Destroy()
+	end
+end)
+
+fpssection:NewButton("fps booster", "improves fps", function()
+	local Terrain = workspace:FindFirstChildOfClass('Terrain')
+	local Lighting = game:GetService("Lighting")
+	Terrain.WaterWaveSize = 0
+	Terrain.WaterWaveSpeed = 0
+	Terrain.WaterReflectance = 0
+	Terrain.WaterTransparency = 0
+	Lighting.GlobalShadows = false
+	Lighting.FogEnd = 9e9
+	settings().Rendering.QualityLevel = 1
+	for i,v in pairs(game:GetDescendants()) do
+		if v:IsA("Part") or v:IsA("UnionOperation") or v:IsA("MeshPart") or v:IsA("CornerWedgePart") or v:IsA("TrussPart") then
+			v.Material = "Plastic"
+			v.Reflectance = 0
+		elseif v:IsA("Decal") then
+			v.Transparency = 1
+		elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
+			v.Lifetime = NumberRange.new(0)
+		elseif v:IsA("Explosion") then
+			v.BlastPressure = 1
+			v.BlastRadius = 1
+		end
+	end
+	for i,v in pairs(Lighting:GetDescendants()) do
+		if v:IsA("BlurEffect") or v:IsA("SunRaysEffect") or v:IsA("BloomEffect") or v:IsA("DepthOfFieldEffect") then
+			v.Enabled = false
+		end
+	end
+	workspace.DescendantAdded:Connect(function(child)
+		coroutine.wrap(function()
+			if child:IsA('ForceField') then
+				RunService.Heartbeat:Wait()
+				child:Destroy()
+			elseif child:IsA('Sparkles') then
+				RunService.Heartbeat:Wait()
+				child:Destroy()
+			elseif child:IsA('Smoke') or child:IsA('Fire') then
+				RunService.Heartbeat:Wait()
+				child:Destroy()
+			end
+		end)()
+	end)
+end)
+
+
+
+--stats page
+statCheckUsername = nil
+local statsTab = Window:NewTab("stats")
+local statsSection = statsTab:NewSection("player stats")
+
+wl = statsSection:NewLabel("wins/losses")
+arch = statsSection:NewLabel("build info")
+secondarch = statsSection:NewLabel("second build info")
+
+statsSection:NewTextBox("username", "the username of the player you want to stat check", function(txt)
+	statCheckUsername = txt
+end)
+
+statsSection:NewButton("check stats", "checks stats", function()
+	player = game.Players:FindFirstChild(statCheckUsername)
+	wins = player.Info.GameStats.W.Value
+	primary = player.Info.Profile.Position.Archetype.Value
+	secondary = player.Info.Profile.Position.SecondArchetype.Value
+	losses = player.Info.GameStats.TotalGames.Value - player.Info.GameStats.W.Value
+	wl:UpdateLabel("wins: " .. tostring(wins) .. " losses: " .. tostring(losses))
+	arch:UpdateLabel("primary arch: " .. primary)
+	secondarch:UpdateLabel(" secondary arch: " .. secondary)
+end)
