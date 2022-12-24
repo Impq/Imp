@@ -490,3 +490,11 @@ statsSection:NewButton("check stats", "checks stats", function()
 	arch:UpdateLabel("primary arch: " .. primary)
 	secondarch:UpdateLabel(" secondary arch: " .. secondary)
 end)
+
+local Tab = Window:NewTab("Speed")
+local Section = Tab:NewSection("Impe")
+
+Section:NewButton("comin soon", "Press 2 or 3 times", function()
+    print("Clicked")
+    
+end)
