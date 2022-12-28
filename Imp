@@ -250,7 +250,7 @@ end)
 workspace.Balls.ChildAdded:Connect(deleteclones)
 -- hbe tab
 
-ballstuff:NewTextBox("ballsize", "changes the size of hbe default 1.32", function(num)
+ballstuff:NewTextBox("ballsize", "put it at 4.32 or 3.32", function(num)
 	if pcall(function() RunService:UnbindFromRenderStep("ballsize") end) then RunService:UnbindFromRenderStep("ballsize") end
 	RunService:BindToRenderStep("ballsize", Enum.RenderPriority.Camera.Value, function()
 		ballClones()
