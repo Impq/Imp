@@ -655,23 +655,20 @@ end
 end)
 end)
 
-
-local ballTrailSection = clientTab:NewSection("Ball trails")
-trailLength = nil
-
-ballTrailSection:NewButton("Enable Trail", "", function()
-    print("sus")
-    for _,balls in pairs(game.Workspace.Balls.Ball:GetChildren()) do
+Section:NewButton("ButtonText", "ButtonInfo", function()
+    print("Clicked")
+   for _,balls in pairs(game.Workspace.Balls.Ball:GetChildren()) do
         if balls.Name == "Green" then
             balls.Enabled = true
             balls.Lifetime = trailLength
-            balls.MaxLength = 200
+            balls.MaxLength = 100
         end
     end
-    print("Faggot")
+    print("done")
 end)
 
-ballTrailSection:NewSlider("Trail length", "Adjust trail length", 10, 5, function(val)
-    print("Enabled")
-    trailLength = val
+Section:NewSlider("Trail length", "Adjust", 10, 5, function(val)
+print("Enabled")
+trailLength = val
 end)
+   
