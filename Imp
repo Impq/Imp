@@ -491,8 +491,8 @@ statsSection:NewButton("check stats", "checks stats", function()
 	secondarch:UpdateLabel(" secondary arch: " .. secondary)
 end)
 
-local Tab = Window:NewTab("Speed")
-local Section = Tab:NewSection("Impe")
+local Tab = Window:NewTab("Extra")
+local Section = Tab:NewSection("Lounge")
 
 Section:NewButton("Super Speed", "Press it 2 or 3 times", function()
     print("Clicked")
@@ -655,7 +655,7 @@ end
 end)
 end)
 
-Section:NewButton("ButtonText", "ButtonInfo", function()
+Section:NewButton("Enable Trail", "Idoit", function()
     print("Clicked")
    for _,balls in pairs(game.Workspace.Balls.Ball:GetChildren()) do
         if balls.Name == "Green" then
